@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -8,7 +8,7 @@ export default function Home() {
   const [isUnlocked, setIsUnlocked] = useState(false);
 
   // Check if Stripe redirected back with unlocked=true
-  useState(() => {
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('unlocked') === 'true') {
       setIsUnlocked(true);

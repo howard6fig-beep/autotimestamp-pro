@@ -100,7 +100,7 @@ export default function Home() {
                 <p style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '18px' }}>Unlock Full Report</p>
                 <p style={{ fontSize: '14px', marginBottom: '20px', color: '#718096' }}>See exactly which keywords you are missing to beat the ATS bots.</p>
                 {/* REPLACE THIS WITH YOUR STRIPE LINK */}
-                <a href="STRIPE_PAYMENT_LINK_HERE" style={{ background: '#635bff', color: 'white', padding: '12px 25px', textDecoration: 'none', borderRadius: '5px', fontWeight: 'bold', display: 'inline-block' }}>
+                <a href="https://buy.stripe.com/dRm6oJgI5czkbQZ6Z21B602" style={{ background: '#635bff', color: 'white', padding: '12px 25px', textDecoration: 'none', borderRadius: '5px', fontWeight: 'bold', display: 'inline-block' }}>
                   Unlock for $5
                 </a>
               </div>

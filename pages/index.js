@@ -70,8 +70,9 @@ export default function Home() {
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', padding: '20px', border: '2px solid #ff0000', borderRadius: '10px', textAlign: 'center' }}>
               <p style={{ fontWeight: 'bold', marginBottom: '15px' }}>Video is over 10 minutes!</p>
               <p style={{ fontSize: '14px', marginBottom: '15px' }}>Unlock full timestamps for just $3.</p>
-              {/* REPLACE THIS WITH YOUR STRIPE LINK LATER */}
-              <a href="STRIPE_PAYMENT_LINK_HERE" style={{ background: '#635bff', color: 'white', padding: '10px 20px', textDecoration: 'none', borderRadius: '5px', fontWeight: 'bold' }}>
+              
+              {/* PASTE YOUR STRIPE LINK RIGHT HERE BELOW */}
+              <a href="https://buy.stripe.com/8x23cxajH42OaMV0AE1B601" style={{ background: '#635bff', color: 'white', padding: '10px 20px', textDecoration: 'none', borderRadius: '5px', fontWeight: 'bold' }}>
                 Unlock for $3
               </a>
             </div>

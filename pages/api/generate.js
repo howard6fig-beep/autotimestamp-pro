@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Fetch the YouTube watch page to get the transcript URL
+    // 1. Fetch the YouTube watch page
     const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const watchResponse = await fetch(watchUrl, {
       headers: {
@@ -32,54 +32,94 @@ export default async function handler(req, res) {
     });
     const html = await watchResponse.text();
     
-    // 2. Find the captionTracks JSON in the HTML
-    const captionTracksRegex = /"captionTracks":(\[.*?\])/;
-    const matches = html.match(captionTracksRegex);
-    
-    if (!matches || matches.length < 2) {
-      return res.status(404).json({ error: 'No transcript found. Ensure the video has captions.' });
+    // 2. Find the captionTracks array using bracket counting (Bulletproof)
+    const captionStringStart = html.indexOf('"captionTracks":');
+    if (captionStringStart === -1) {
+      return res.status(404).json({ error: 'No transcript found. (Code: 100)' });
     }
-
-    const captionTracks = JSON.parse(matches[1]);
+    
+    const arrayStart = html.indexOf('[', captionStringStart);
+    let bracketCount = 0;
+    let arrayEnd = -1;
+    
+    for (let i = arrayStart; i < html.length; i++) {
+      if (html[i] === '[') bracketCount++;
+      if (html[i] === ']') bracketCount--;
+      if (bracketCount === 0) {
+        arrayEnd = i + 1;
+        break;
+      }
+    }
+    
+    if (arrayEnd === -1) {
+      return res.status(404).json({ error: 'No transcript found. (Code: 101)' });
+    }
+    
+    const tracksJson = html.slice(arrayStart, arrayEnd);
+    const captionTracks = JSON.parse(tracksJson);
+    
     if (captionTracks.length === 0) {
       return res.status(404).json({ error: 'No transcript found.' });
     }
     
-    // Prefer English if available, otherwise take the first one
+    // Prefer English if available
     let transcriptUrl = captionTracks[0].baseUrl;
     const englishTrack = captionTracks.find(track => track.languageCode === 'en');
     if (englishTrack) {
       transcriptUrl = englishTrack.baseUrl;
     }
 
-    // 3. Fetch the actual transcript XML
+    // 3. Fetch the actual transcript
     const transcriptResponse = await fetch(transcriptUrl);
-    const transcriptXml = await transcriptResponse.text();
+    let transcriptText = await transcriptResponse.text();
     
-    // 4. Parse the XML into our required format
-    const textRegex = /<text start="([\d.]+)" dur="[\d.]+">(.*?)<\/text>/g;
     let transcript = [];
+    
+    // 4. Try parsing as XML first
+    const textRegex = /<text start="([\d.]+)"[^>]*>(.*?)<\/text>/gms;
     let match;
-    while ((match = textRegex.exec(transcriptXml)) !== null) {
-      // Decode HTML entities
+    while ((match = textRegex.exec(transcriptText)) !== null) {
       let text = match[2]
         .replace(/&amp;#39;/g, "'")
         .replace(/&amp;quot;/g, '"')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
-        .replace(/&amp;amp;/g, '&');
+        .replace(/&amp;amp;/g, '&')
+        .replace(/\n/g, ' ');
         
       transcript.push({
-        offset: Math.floor(parseFloat(match[1]) * 1000), // convert to ms
+        offset: Math.floor(parseFloat(match[1]) * 1000),
         text: text
       });
+    }
+
+    // 5. If XML failed, try parsing as JSON3
+    if (transcript.length === 0) {
+      try {
+        const data = JSON.parse(transcriptText);
+        if (data.events) {
+          data.events.forEach(event => {
+            if (event.segs) {
+              let text = event.segs.map(seg => seg.utf8).join('').replace(/\n/g, ' ');
+              if (text.trim() !== '') {
+                transcript.push({
+                  offset: event.tStartMs || 0,
+                  text: text
+                });
+              }
+            }
+          });
+        }
+      } catch (e) {
+        // Not JSON either
+      }
     }
 
     if (transcript.length === 0) {
       return res.status(404).json({ error: 'Transcript is empty.' });
     }
 
-    // 5. Apply the rule-based clustering algorithm
+    // 6. Apply the rule-based clustering algorithm
     let timestamps = '';
     let currentChunk = '';
     let chunkStartTime = 0;
